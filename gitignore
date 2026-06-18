@@ -1,0 +1,20 @@
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# Dependencias (si añades tooling más adelante)
+node_modules/
+
+# Variables de entorno / claves API — NUNCA subir esto
+.env
+.env.local
+*.key
+
+# Logs
+*.log
+npm-debug.log*
