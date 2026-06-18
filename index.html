@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>Controlador de Compras A$</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+:root{--navy:#1b2952;--purple:#c176fc;--blue-lt:#b4cfff;--bg:#f0f3ff;--card:rgba(255,255,255,0.88);--border:rgba(180,190,255,0.25);--text:#1b2952;--muted:#6b7ab5;--inp:rgba(255,255,255,0.75);--glass:rgba(255,255,255,0.55);--shadow:0 4px 28px rgba(27,41,82,0.09);--accent:#c176fc;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444;--hover:rgba(180,207,255,0.15);--tr:.25s}
+[data-dark]{--bg:#090e1f;--card:rgba(16,24,52,0.88);--border:rgba(193,118,252,0.18);--text:#dde4ff;--muted:#7a8cc4;--inp:rgba(20,30,64,0.8);--glass:rgba(16,24,52,0.6);--shadow:0 4px 32px rgba(0,0,0,0.4);--hover:rgba(193,118,252,0.07)}
+*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background var(--tr),color var(--tr);overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 90% 55% at 50% -5%,rgba(193,118,252,.11) 0%,transparent 65%),radial-gradient(ellipse 50% 45% at 100% 110%,rgba(27,41,82,.07) 0%,transparent 55%);pointer-events:none;z-index:0}
+.app{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 18px 52px}
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 0 14px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#1b2952,#c176fc);display:flex;align-items:center;justify-content:center;font-size:20px}
+.logo-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;line-height:1.2}
+.logo-sub{font-size:11px;color:var(--muted)}
+.hdr-r{display:flex;align-items:center;gap:8px}
+.btn-icon{width:36px;height:36px;border-radius:9px;border:1px solid var(--border);background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all var(--tr)}
+.btn-icon:hover{border-color:var(--accent);transform:translateY(-1px)}
+.btn-pri{height:36px;padding:0 18px;border-radius:9px;background:linear-gradient(135deg,#1b2952,#c176fc);color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;transition:opacity var(--tr),transform var(--tr)}
+.btn-pri:hover{opacity:.88;transform:translateY(-1px)}
+.btn-pri:disabled{opacity:.4;cursor:not-allowed;transform:none}
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:22px;background:var(--card);border:1px solid var(--border);border-radius:13px;padding:4px;backdrop-filter:blur(14px)}
+.tab{flex:1;padding:9px 10px;border-radius:9px;border:none;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all var(--tr);display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}
+.tab.on{background:linear-gradient(135deg,#1b2952,#c176fc);color:#fff;box-shadow:0 2px 14px rgba(193,118,252,.3)}
+.tab:hover:not(.on){background:var(--hover);color:var(--text)}
+/* PANELS */
+.panel{display:none}.panel.on{display:block}
+/* CARD */
+.gc{background:var(--card);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.met{background:var(--card);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:14px;padding:16px;position:relative;overflow:hidden;transition:transform var(--tr)}
+.met:hover{transform:translateY(-2px)}
+.met::before{content:'';position:absolute;top:-18px;right:-18px;width:60px;height:60px;border-radius:50%;background:var(--mc,rgba(193,118,252,.1))}
+.met-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.met-val{font-family:'Syne',sans-serif;font-size:24px;font-weight:700}
+.met-sub{font-size:11px;color:var(--muted);margin-top:3px}
+/* CHARTS */
+.ch-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.ch-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px}
+.ch-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;margin-bottom:12px}
+.cat-legend{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
+.cat-dot{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
+.cat-dot span{width:10px;height:10px;border-radius:2px;display:inline-block}
+.chart-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:var(--muted);font-size:12px;gap:8px}
+/* BADGE */
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+.b-g{background:rgba(34,197,94,.12);color:#16a34a}.b-r{background:rgba(239,68,68,.1);color:#dc2626}
+.b-o{background:rgba(245,158,11,.12);color:#d97706}.b-p{background:rgba(193,118,252,.14);color:#9333ea}
+.b-b{background:rgba(180,207,255,.25);color:#2563eb}[data-dark] .b-b{color:#93c5fd}
+/* UPLOAD */
+.drop-zone{border:2px dashed var(--border);border-radius:16px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .3s;background:var(--glass);backdrop-filter:blur(8px);margin-bottom:18px}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:rgba(193,118,252,.05)}
+.dz-icon{font-size:42px;margin-bottom:10px}.dz-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:5px}
+.dz-sub{font-size:13px;color:var(--muted)}
+.fmt-tags{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px}
+.fmt{padding:3px 11px;border-radius:20px;font-size:11px;font-weight:500;background:rgba(180,207,255,.2);color:var(--blue-lt);border:1px solid rgba(180,207,255,.3)}
+[data-dark] .fmt{color:#b4cfff}
+.up-methods{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.up-card{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:18px;text-align:center;cursor:pointer;transition:all var(--tr)}
+.up-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.up-card-icon{font-size:28px;margin-bottom:7px}.up-card-title{font-size:13px;font-weight:500}
+.up-card-sub{font-size:11px;color:var(--muted);margin-top:3px}
+/* PROGRESS */
+.prog-wrap{display:none;margin-bottom:18px}.prog-wrap.on{display:block}
+.prog-steps{display:flex;gap:6px;margin-bottom:10px}
+.ps{flex:1;padding:9px 6px;border-radius:10px;font-size:11px;text-align:center;border:1px solid var(--border);color:var(--muted);background:var(--card);transition:all .3s}
+.ps.active{background:linear-gradient(135deg,#1b2952,#c176fc);color:#fff;border-color:transparent}
+.ps.done{background:rgba(34,197,94,.1);color:#16a34a;border-color:rgba(34,197,94,.25)}
+.prog-bar-bg{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.prog-bar{height:100%;border-radius:3px;background:linear-gradient(90deg,#1b2952,#c176fc);width:0%;transition:width .5s ease}
+.prog-msg{font-size:12px;color:var(--muted);margin-top:7px;text-align:center}
+/* EXTRACT FORM */
+.ext-preview{display:none;background:var(--card);border:1px solid rgba(34,197,94,.3);border-radius:14px;padding:20px;margin-bottom:18px}
+.ext-preview.on{display:block}
+.ext-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:6px}
+.ext-title.warn{color:var(--warn)}.ext-title.ok{color:var(--ok)}
+.form-row{margin-bottom:12px}
+.form-lbl{font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;gap:6px}
+.form-inp{width:100%;padding:9px 12px;border-radius:9px;border:1px solid var(--border);background:var(--inp);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color var(--tr)}
+.form-inp:focus{border-color:var(--accent)}
+.form-sel{width:100%;padding:9px 12px;border-radius:9px;border:1px solid var(--border);background:var(--inp);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;cursor:pointer}
+.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.iva-auto{font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:var(--hover);cursor:pointer;color:var(--accent);font-family:'DM Sans',sans-serif;font-weight:500}
+.cap-thumb{margin-bottom:14px;display:flex;align-items:flex-start;gap:12px;padding:10px;background:var(--glass);border:1px solid var(--border);border-radius:10px}
+.cap-thumb img{max-height:80px;max-width:100px;border-radius:7px;object-fit:cover}
+.cap-thumb-info{font-size:11px;color:var(--muted)}
+.ext-source{font-size:11px;color:var(--muted);margin-bottom:14px;padding:7px 12px;background:var(--glass);border-radius:8px;border:1px solid var(--border)}
+/* VOICE MODAL */
+.voice-modal{width:92%;max-width:480px;padding:0;overflow:hidden}
+.voice-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)}
+.voice-header span{font-weight:600;font-size:13px}
+.voice-body{padding:30px 24px 24px;text-align:center}
+.voice-mic-wrap{position:relative;width:118px;height:118px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center}
+.voice-mic-pulse{position:absolute;inset:0;border-radius:50%;background:rgba(193,118,252,.28);transform:scale(.6);opacity:0}
+.voice-mic-pulse.on{animation:micpulse 1.6s ease-out infinite}
+.voice-mic-pulse.on2{animation-delay:.4s}
+@keyframes micpulse{0%{transform:scale(.6);opacity:.55}100%{transform:scale(1.45);opacity:0}}
+.voice-mic-btn{position:relative;z-index:2;width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#1b2952,#c176fc);color:#fff;font-size:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;transition:all .2s;box-shadow:0 6px 24px rgba(193,118,252,.35)}
+.voice-mic-btn:hover{transform:scale(1.05)}
+.voice-mic-btn.listening{background:linear-gradient(135deg,#ef4444,#f59e0b)}
+.voice-status{font-size:13px;color:var(--muted);margin-bottom:14px;min-height:18px;font-weight:500}
+.voice-transcript{min-height:74px;max-height:160px;overflow-y:auto;background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.6;text-align:left;margin-bottom:12px;color:var(--text)}
+.voice-transcript:empty::before{content:'El texto que digas aparecerá aquí…';color:var(--muted)}
+.voice-hint{font-size:11px;color:var(--muted);font-style:italic;line-height:1.5}
+.voice-not-supported{font-size:12px;color:var(--warn);margin-top:8px}
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead{background:var(--glass)}
+th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--hover)}
+.empty-state{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty-state .es-icon{font-size:44px;margin-bottom:12px}
+.empty-state .es-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:5px}
+.empty-state .es-sub{font-size:12px}
+/* SEARCH */
+.sf-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.s-inp{flex:1;min-width:180px;padding:9px 14px;border-radius:10px;border:1px solid var(--border);background:var(--inp);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color var(--tr)}
+.s-inp:focus{border-color:var(--accent)}.s-inp::placeholder{color:var(--muted)}
+.s-sel{padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--inp);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;cursor:pointer}
+.exp-row{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
+.exp-btn{padding:8px 16px;border-radius:9px;font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;display:flex;align-items:center;gap:5px;font-family:'DM Sans',sans-serif;transition:all var(--tr)}
+.exp-btn:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+.act-btn{background:transparent;border:none;cursor:pointer;font-size:15px;padding:3px 5px;border-radius:6px;transition:background var(--tr)}
+.act-btn:hover{background:var(--hover)}
+/* REPORTS */
+.rep-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.rep-card{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:16px;cursor:pointer;transition:all var(--tr);text-align:center}
+.rep-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 20px rgba(193,118,252,.12)}
+.rep-icon{font-size:28px;margin-bottom:6px}.rep-title{font-size:13px;font-weight:600;margin-bottom:3px}
+.rep-sub{font-size:11px;color:var(--muted)}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.stat-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.stat-n{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--accent)}
+.stat-l{font-size:11px;color:var(--muted);margin-top:3px}
+.prov-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.prov-row:last-child{border-bottom:none}
+.prov-avatar{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#1b2952,#c176fc);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;flex-shrink:0}
+.prov-bar-bg{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.prov-bar{height:100%;background:linear-gradient(90deg,#1b2952,#c176fc);border-radius:3px}
+.prov-amt{font-size:13px;font-weight:600;white-space:nowrap}
+/* AI CHAT */
+.chat-box{height:300px;overflow-y:auto;padding:14px;background:var(--glass);border-radius:12px;border:1px solid var(--border);margin-bottom:12px;scroll-behavior:smooth}
+.msg{display:flex;gap:9px;margin-bottom:14px}
+.msg-av{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px}
+.msg-av.ai{background:linear-gradient(135deg,#1b2952,#c176fc);color:#fff}
+.msg-av.usr{background:var(--border);color:var(--text)}
+.msg-bbl{flex:1;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6;background:var(--card);border:1px solid var(--border)}
+.msg.usr{flex-direction:row-reverse}
+.msg.usr .msg-bbl{background:linear-gradient(135deg,#1b2952,#c176fc);color:#fff;border:none}
+.quick-qs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.qq{padding:5px 13px;border-radius:20px;font-size:11px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;transition:all var(--tr);font-family:'DM Sans',sans-serif}
+.qq:hover{border-color:var(--accent);color:var(--accent)}
+.chat-row{display:flex;gap:8px}
+.chat-inp{flex:1;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--inp);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color var(--tr)}
+.chat-inp:focus{border-color:var(--accent)}.chat-inp::placeholder{color:var(--muted)}
+.typing-dots{display:flex;align-items:center;gap:4px;padding:6px 2px}
+.td{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:dotpulse 1.2s ease-in-out infinite}
+.td:nth-child(2){animation-delay:.2s}.td:nth-child(3){animation-delay:.4s}
+@keyframes dotpulse{0%,80%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+/* ALERT */
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-radius:11px;margin-bottom:8px}
+.alert-warn{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.22)}
+.alert-err{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.18)}
+.alert-ok{background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.22)}
+.alert-info{background:rgba(180,207,255,.1);border:1px solid rgba(180,207,255,.3)}
+.alert-icon{font-size:18px;margin-top:1px;flex-shrink:0}
+.alert-title{font-size:13px;font-weight:500}.alert-sub{font-size:11px;color:var(--muted)}
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-bg.on{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;width:90%;max-width:500px;box-shadow:0 24px 64px rgba(0,0,0,.25)}
+.modal-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:20px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.btn-sec{padding:8px 18px;border-radius:9px;font-size:13px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all var(--tr)}
+.btn-sec:hover{background:var(--hover)}
+/* CAMERA MODAL — auto-adapta a móvil (pantalla completa) y escritorio (modal compacto) */
+.cam-modal{width:95%;max-width:560px;padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:92vh}
+.cam-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.cam-header span{font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px}
+.cam-dev-tag{font-size:9px;padding:2px 7px;border-radius:10px;background:var(--hover);color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.cam-body{position:relative;background:#000;flex:1;min-height:260px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#camVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.cam-guide{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.cam-frame{width:84%;aspect-ratio:1.55/1;border:2px solid rgba(193,118,252,.85);border-radius:10px;box-shadow:0 0 0 2000px rgba(0,0,0,.3);transition:aspect-ratio .35s ease}
+.cam-hint{margin-top:10px;color:rgba(255,255,255,.9);font-size:11px;background:rgba(0,0,0,.5);padding:5px 13px;border-radius:20px;backdrop-filter:blur(4px)}
+.cam-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:5}
+.cam-flash.on{animation:flash .35s ease-out forwards}
+@keyframes flash{0%{opacity:.85}100%{opacity:0}}
+.cam-placeholder{color:rgba(255,255,255,.55);text-align:center;padding:30px;font-size:13px;position:relative;z-index:1}
+.cam-placeholder .cam-p-icon{font-size:48px;margin-bottom:10px}
+.cam-footer{padding:18px 20px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);flex-shrink:0}
+.cam-capture{width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,#1b2952,#c176fc);border:4px solid rgba(255,255,255,.25);cursor:pointer;font-size:25px;display:flex;align-items:center;justify-content:center;transition:all .2s;box-shadow:0 4px 20px rgba(193,118,252,.4)}
+.cam-capture:not(:disabled):hover{transform:scale(1.06);box-shadow:0 6px 28px rgba(193,118,252,.55)}
+.cam-capture:not(:disabled):active{transform:scale(.92)}
+.cam-capture:disabled{opacity:.35;cursor:not-allowed}
+.cam-switch{width:46px;height:46px;border-radius:50%;border:1px solid var(--border);background:var(--glass);color:var(--text);font-size:20px;display:none;align-items:center;justify-content:center;cursor:pointer;transition:all .2s}
+.cam-switch:hover{background:var(--hover)}
+.cam-spacer{width:46px}
+.cam-status{text-align:center;font-size:11px;padding:8px 14px;color:var(--muted);border-top:1px solid var(--border);flex-shrink:0}
+@media(max-width:680px){
+  #camModal{padding:0}
+  .cam-modal{width:100%;height:100dvh;max-width:100%;max-height:100dvh;border-radius:0;margin:0}
+  .cam-body{min-height:0}
+  .cam-frame{width:90%;aspect-ratio:1.25/1}
+  .cam-capture{width:76px;height:76px;font-size:29px}
+}
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;z-index:999;padding:12px 20px;border-radius:13px;background:#1b2952;color:#fff;font-size:13px;display:flex;align-items:center;gap:8px;box-shadow:0 8px 32px rgba(27,41,82,.3);transform:translateY(90px);opacity:0;transition:all .35s cubic-bezier(.34,1.56,.64,1);max-width:320px}
+.toast.on{transform:translateY(0);opacity:1}
+@media(max-width:680px){.toast{left:16px;right:16px;bottom:16px;max-width:none}}
+/* RESPONSIVE */
+@media(max-width:680px){
+  .metrics{grid-template-columns:repeat(2,1fr)}.ch-row{grid-template-columns:1fr}
+  .rep-grid{grid-template-columns:repeat(2,1fr)}.up-methods{grid-template-columns:1fr 1fr}
+  .stat-row{grid-template-columns:repeat(2,1fr)}.form-3col{grid-template-columns:1fr 1fr}
+  .tab span{display:none}
+}
+@media(max-width:440px){
+  .up-methods{grid-template-columns:1fr}.form-2col{grid-template-columns:1fr}
+  .form-3col{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="hdr">
+    <div class="logo">
+      <div class="logo-icon">📊</div>
+      <div>
+        <div class="logo-name">Controlador de Compras A$</div>
+        <div class="logo-sub">IA Vision · OCR Inteligente · v3.1</div>
+      </div>
+    </div>
+    <div class="hdr-r">
+      <button class="btn-icon" id="themeBtn" title="Modo oscuro/claro">🌙</button>
+      <button class="btn-pri" onclick="goTab('upload')">+ Nueva Factura</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" onclick="goTab('dash',this)">📊 <span>Dashboard</span></button>
+    <button class="tab" onclick="goTab('upload',this)">📤 <span>Subir</span></button>
+    <button class="tab" onclick="goTab('facturas',this)">🗂️ <span>Facturas</span></button>
+    <button class="tab" onclick="goTab('reportes',this)">📄 <span>Reportes</span></button>
+    <button class="tab" onclick="goTab('asistente',this)">🤖 <span>Asistente IA</span></button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="p-dash" class="panel on">
+    <div class="metrics">
+      <div class="met" style="--mc:rgba(193,118,252,.12)">
+        <div class="met-lbl">Total Documentos</div>
+        <div class="met-val" id="m-docs">0</div>
+        <div class="met-sub">facturas procesadas</div>
+      </div>
+      <div class="met" style="--mc:rgba(34,197,94,.1)">
+        <div class="met-lbl">Total Gastado</div>
+        <div class="met-val" id="m-total">$0.00</div>
+        <div class="met-sub">acumulado</div>
+      </div>
+      <div class="met" style="--mc:rgba(180,207,255,.18)">
+        <div class="met-lbl">IVA Pagado</div>
+        <div class="met-val" id="m-iva">$0.00</div>
+        <div class="met-sub">15% acumulado</div>
+      </div>
+      <div class="met" style="--mc:rgba(245,158,11,.1)">
+        <div class="met-lbl">Promedio / Doc</div>
+        <div class="met-val" id="m-avg">$0.00</div>
+        <div class="met-sub">por factura</div>
+      </div>
+    </div>
+    <div class="ch-row">
+      <div class="ch-card">
+        <div class="ch-title">💰 Gastos últimos 6 meses</div>
+        <div id="barWrap" style="position:relative;height:210px"><canvas id="barChart"></canvas></div>
+      </div>
+      <div class="ch-card">
+        <div class="ch-title">🏷️ Por categoría</div>
+        <div id="catLegend" class="cat-legend"></div>
+        <div id="pieWrap" style="position:relative;height:170px"><canvas id="pieChart"></canvas></div>
+      </div>
+    </div>
+    <div class="gc" id="alertsSection">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:600">🔔 Estado del sistema</div>
+      </div>
+      <div id="alertsList">
+        <div class="alert-item alert-info">
+          <div class="alert-icon">👋</div>
+          <div><div class="alert-title">¡Bienvenido a Controlador de Compras A$!</div>
+          <div class="alert-sub">Sube tu primera factura — la IA extrae los datos automáticamente con reconocimiento óptico de caracteres (OCR).</div></div>
+        </div>
+        <div class="alert-item alert-ok">
+          <div class="alert-icon">✅</div>
+          <div><div class="alert-title">Sistema listo</div>
+          <div class="alert-sub">IA Vision conectada · OCR activo · Cámara lista para móvil y computador.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UPLOAD -->
+  <div id="p-upload" class="panel">
+    <div class="drop-zone" id="dropZone"
+         onclick="document.getElementById('fileIn').click()"
+         ondragover="event.preventDefault();this.classList.add('drag')"
+         ondragleave="this.classList.remove('drag')"
+         ondrop="event.preventDefault();this.classList.remove('drag');handleFiles(event.dataTransfer.files)">
+      <div class="dz-icon">📥</div>
+      <div class="dz-title" id="dzTitle">Arrastra tu factura o recibo aquí</div>
+      <div class="dz-sub" id="dzSub">o haz clic para seleccionar — la IA extrae los datos automáticamente</div>
+      <div class="fmt-tags">
+        <span class="fmt">PDF</span><span class="fmt">JPG</span>
+        <span class="fmt">PNG</span><span class="fmt">WEBP</span>
+      </div>
+    </div>
+    <input type="file" id="fileIn" accept=".pdf,.jpg,.jpeg,.png,.webp,image/*,application/pdf" style="display:none" onchange="handleFiles(this.files)">
+
+    <div class="up-methods">
+      <div class="up-card" onclick="document.getElementById('fileIn').click()">
+        <div class="up-card-icon">💻</div>
+        <div class="up-card-title">Desde dispositivo</div>
+        <div class="up-card-sub">Archivos, galería o PDF</div>
+      </div>
+      <div class="up-card" id="camCardBtn" onclick="openCamModal()">
+        <div class="up-card-icon">📷</div>
+        <div class="up-card-title">Cámara en vivo</div>
+        <div class="up-card-sub" id="camCardSub">Detectando dispositivo…</div>
+      </div>
+      <div class="up-card" onclick="openVoiceModal()">
+        <div class="up-card-icon">🎙️</div>
+        <div class="up-card-title">Por voz</div>
+        <div class="up-card-sub">Dicta los datos</div>
+      </div>
+      <div class="up-card" onclick="openManualModal()">
+        <div class="up-card-icon">✏️</div>
+        <div class="up-card-title">Ingreso manual</div>
+        <div class="up-card-sub">Sin imagen / directo</div>
+      </div>
+    </div>
+
+    <div class="prog-wrap" id="progWrap">
+      <div class="prog-steps">
+        <div class="ps" id="ps0">📷 Leer</div>
+        <div class="ps" id="ps1">🤖 IA</div>
+        <div class="ps" id="ps2">📊 Extraer</div>
+        <div class="ps" id="ps3">✅ Validar</div>
+        <div class="ps" id="ps4">📋 Listo</div>
+      </div>
+      <div class="prog-bar-bg"><div class="prog-bar" id="progBar"></div></div>
+      <div class="prog-msg" id="progMsg">Iniciando…</div>
+    </div>
+
+    <div class="ext-preview" id="extPreview">
+      <div class="ext-title ok" id="extTitle">🤖 IA extrajo estos datos — revisa y edita si es necesario</div>
+      <div class="ext-source" id="extSource" style="display:none"></div>
+      <div id="capThumb" class="cap-thumb" style="display:none">
+        <img id="capThumbImg" alt="Factura capturada">
+        <div class="cap-thumb-info">
+          <div style="font-weight:500;font-size:12px;margin-bottom:3px">📷 Imagen procesada</div>
+          <div id="capThumbName" style="font-size:11px"></div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">Proveedor / Empresa *</div>
+        <input class="form-inp" id="ef-prov" placeholder="Nombre de la empresa o persona">
+      </div>
+      <div class="form-2col">
+        <div class="form-row">
+          <div class="form-lbl">RUC / Identificación fiscal</div>
+          <input class="form-inp" id="ef-ruc" placeholder="Ej: 1790000000001">
+        </div>
+        <div class="form-row">
+          <div class="form-lbl">N° Comprobante</div>
+          <input class="form-inp" id="ef-num" placeholder="Ej: 001-001-000001">
+        </div>
+      </div>
+      <div class="form-2col">
+        <div class="form-row">
+          <div class="form-lbl">Fecha</div>
+          <input class="form-inp" type="date" id="ef-fecha">
+        </div>
+        <div class="form-row">
+          <div class="form-lbl">Categoría</div>
+          <select class="form-sel" id="ef-cat">
+            <option>Tecnología</option><option>Servicios</option><option>Papelería</option>
+            <option>Alimentación</option><option>Combustible</option><option>Salud</option>
+            <option>Construcción</option><option>Transporte</option><option selected>Otros</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-3col">
+        <div class="form-row">
+          <div class="form-lbl">Subtotal</div>
+          <input class="form-inp" type="number" step="0.01" min="0" id="ef-sub" placeholder="0.00" oninput="autoCalcIVA()">
+        </div>
+        <div class="form-row">
+          <div class="form-lbl">IVA <button class="iva-auto" onclick="autoCalcIVA()">Auto 15%</button></div>
+          <input class="form-inp" type="number" step="0.01" min="0" id="ef-iva" placeholder="0.00">
+        </div>
+        <div class="form-row">
+          <div class="form-lbl">Total *</div>
+          <input class="form-inp" type="number" step="0.01" min="0" id="ef-total" placeholder="0.00" oninput="autoCalcFromTotal()">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-lbl">Observaciones</div>
+        <input class="form-inp" id="ef-obs" placeholder="Notas adicionales">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+        <button class="btn-sec" onclick="discardExtract()">Descartar</button>
+        <button class="btn-pri" onclick="saveInvoice()" id="saveBtnMain">💾 Guardar factura</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FACTURAS -->
+  <div id="p-facturas" class="panel">
+    <div class="sf-row">
+      <input class="s-inp" id="searchIn" placeholder="🔍  Buscar proveedor, RUC, número, categoría…" oninput="renderTable()">
+      <select class="s-sel" id="catF" onchange="renderTable()">
+        <option value="">Todas las categorías</option>
+        <option>Tecnología</option><option>Servicios</option><option>Papelería</option>
+        <option>Alimentación</option><option>Combustible</option><option>Salud</option>
+        <option>Construcción</option><option>Transporte</option><option>Otros</option>
+      </select>
+    </div>
+    <div class="exp-row">
+      <button class="exp-btn" onclick="exportCSV()">📊 Exportar CSV</button>
+      <button class="exp-btn" onclick="exportJSON()">📋 Exportar JSON</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>N°</th><th>Proveedor</th><th>RUC</th><th>Fecha</th>
+            <th>Categoría</th><th>Subtotal</th><th>IVA</th><th>Total</th>
+            <th>Estado</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- REPORTES -->
+  <div id="p-reportes" class="panel">
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-n" id="sr-docs">0</div><div class="stat-l">Facturas</div></div>
+      <div class="stat-box"><div class="stat-n" id="sr-total">$0</div><div class="stat-l">Total gastado</div></div>
+      <div class="stat-box"><div class="stat-n" id="sr-iva">$0</div><div class="stat-l">IVA pagado</div></div>
+      <div class="stat-box"><div class="stat-n" id="sr-avg">$0</div><div class="stat-l">Promedio</div></div>
+    </div>
+    <div class="rep-grid">
+      <div class="rep-card" onclick="toast('📅 Generando reporte diario…')"><div class="rep-icon">📅</div><div class="rep-title">Hoy</div><div class="rep-sub" id="rr-today">0 facturas</div></div>
+      <div class="rep-card" onclick="toast('📆 Generando reporte semanal…')"><div class="rep-icon">📆</div><div class="rep-title">Esta semana</div><div class="rep-sub" id="rr-week">0 facturas</div></div>
+      <div class="rep-card" onclick="toast('🗓️ Generando reporte mensual…')"><div class="rep-icon">🗓️</div><div class="rep-title">Este mes</div><div class="rep-sub" id="rr-month">0 facturas</div></div>
+      <div class="rep-card" onclick="exportCSV()"><div class="rep-icon">📊</div><div class="rep-title">Exportar CSV</div><div class="rep-sub">Todas las facturas</div></div>
+      <div class="rep-card" onclick="exportJSON()"><div class="rep-icon">📋</div><div class="rep-title">Exportar JSON</div><div class="rep-sub">Datos completos</div></div>
+      <div class="rep-card" onclick="goTab('asistente')"><div class="rep-icon">🤖</div><div class="rep-title">Análisis IA</div><div class="rep-sub">Consulta inteligente</div></div>
+    </div>
+    <div class="gc" style="margin-bottom:16px">
+      <div class="ch-title">📈 Tendencia de gastos</div>
+      <div style="position:relative;height:220px"><canvas id="lineChart"></canvas></div>
+    </div>
+    <div class="gc">
+      <div class="ch-title" style="margin-bottom:14px">🏅 Top proveedores</div>
+      <div id="topProv"><div class="empty-state"><div class="es-icon">🏢</div><div class="es-sub">Sin facturas todavía</div></div></div>
+    </div>
+  </div>
+
+  <!-- ASISTENTE IA -->
+  <div id="p-asistente" class="panel">
+    <div class="gc">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#1b2952,#c176fc);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px">🤖</div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700">Asistente IA</div>
+          <div style="font-size:11px;color:var(--muted)">Consulta tus facturas en lenguaje natural · Powered by Claude</div>
+        </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:5px">
+          <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px #22c55e"></div>
+          <span style="font-size:11px;color:var(--muted)">Activo</span>
+        </div>
+      </div>
+      <div class="quick-qs">
+        <button class="qq" onclick="askAI('¿Cuánto he gastado en total?')">💬 Total gastado</button>
+        <button class="qq" onclick="askAI('¿Cuál es mi proveedor principal?')">🏷️ Proveedor top</button>
+        <button class="qq" onclick="askAI('¿Cuánto IVA he pagado?')">📋 IVA total</button>
+        <button class="qq" onclick="askAI('Dame un resumen ejecutivo de mis compras')">📊 Resumen</button>
+        <button class="qq" onclick="askAI('¿Qué categoría concentra más gastos?')">🏷️ Categorías</button>
+        <button class="qq" onclick="askAI('¿Cuánto gasté este mes?')">📅 Este mes</button>
+      </div>
+      <div class="chat-box" id="chatBox"></div>
+      <div class="chat-row">
+        <input class="chat-inp" id="chatIn" placeholder="Ej: ¿Cuáles son mis facturas de tecnología este mes?" onkeydown="if(event.key==='Enter'&&!event.shiftKey)sendChat()">
+        <button class="btn-pri" id="chatSendBtn" onclick="sendChat()">Enviar ↗</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- CAMERA MODAL -->
+<div class="modal-bg" id="camModal">
+  <div class="modal cam-modal">
+    <div class="cam-header">
+      <span>📷 Tomar foto de factura <span class="cam-dev-tag" id="camDevTag">—</span></span>
+      <button class="btn-icon" onclick="closeCam()">✕</button>
+    </div>
+    <div class="cam-body" id="camBody">
+      <video id="camVideo" autoplay playsinline muted></video>
+      <div class="cam-guide" id="camGuide" style="display:none">
+        <div class="cam-frame" id="camFrame"></div>
+        <div class="cam-hint">Encuadra la factura dentro del marco</div>
+      </div>
+      <div class="cam-flash" id="camFlash"></div>
+      <div class="cam-placeholder" id="camPlaceholder">
+        <div class="cam-p-icon">⏳</div>
+        <div id="camPlaceholderTxt">Iniciando cámara…</div>
+      </div>
+    </div>
+    <div class="cam-footer">
+      <div class="cam-spacer" id="camSpacer"></div>
+      <button class="cam-capture" id="captureBtn" onclick="snapPhoto()" disabled title="Capturar foto">📸</button>
+      <button class="cam-switch" id="camSwitch" onclick="switchCamera()" title="Cambiar cámara">🔄</button>
+    </div>
+    <div class="cam-status" id="camStatus">⏳ Solicitando acceso a la cámara…</div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <div class="modal-title">✏️ Editar Factura</div>
+    <div class="form-row"><div class="form-lbl">Proveedor</div><input class="form-inp" id="eProveedor"></div>
+    <div class="form-2col">
+      <div class="form-row"><div class="form-lbl">RUC</div><input class="form-inp" id="eRuc"></div>
+      <div class="form-row"><div class="form-lbl">N° Comprobante</div><input class="form-inp" id="eNum"></div>
+    </div>
+    <div class="form-2col">
+      <div class="form-row"><div class="form-lbl">Fecha</div><input class="form-inp" type="date" id="eFecha"></div>
+      <div class="form-row"><div class="form-lbl">Categoría</div>
+        <select class="form-sel" id="eCat">
+          <option>Tecnología</option><option>Servicios</option><option>Papelería</option>
+          <option>Alimentación</option><option>Combustible</option><option>Salud</option>
+          <option>Construcción</option><option>Transporte</option><option>Otros</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-3col">
+      <div class="form-row"><div class="form-lbl">Subtotal</div><input class="form-inp" type="number" step="0.01" id="eSub"></div>
+      <div class="form-row"><div class="form-lbl">IVA</div><input class="form-inp" type="number" step="0.01" id="eIva"></div>
+      <div class="form-row"><div class="form-lbl">Total</div><input class="form-inp" type="number" step="0.01" id="eTotal"></div>
+    </div>
+    <div class="form-row"><div class="form-lbl">Observaciones</div><input class="form-inp" id="eObs"></div>
+    <div class="modal-footer">
+      <button class="btn-sec" onclick="closeModal('editModal')">Cancelar</button>
+      <button class="btn-pri" onclick="saveEdit()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MANUAL MODAL -->
+<div class="modal-bg" id="manualModal">
+  <div class="modal">
+    <div class="modal-title">✏️ Ingreso Manual de Factura</div>
+    <div class="form-row"><div class="form-lbl">Proveedor *</div><input class="form-inp" id="mn-prov" placeholder="Nombre empresa o persona"></div>
+    <div class="form-2col">
+      <div class="form-row"><div class="form-lbl">RUC</div><input class="form-inp" id="mn-ruc" placeholder="RUC o cédula"></div>
+      <div class="form-row"><div class="form-lbl">N° Comprobante</div><input class="form-inp" id="mn-num" placeholder="001-001-000001"></div>
+    </div>
+    <div class="form-2col">
+      <div class="form-row"><div class="form-lbl">Fecha</div><input class="form-inp" type="date" id="mn-fecha"></div>
+      <div class="form-row"><div class="form-lbl">Categoría</div>
+        <select class="form-sel" id="mn-cat">
+          <option>Tecnología</option><option>Servicios</option><option>Papelería</option>
+          <option>Alimentación</option><option>Combustible</option><option>Salud</option>
+          <option>Construcción</option><option>Transporte</option><option selected>Otros</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-3col">
+      <div class="form-row"><div class="form-lbl">Subtotal</div><input class="form-inp" type="number" step="0.01" id="mn-sub" placeholder="0.00" oninput="mnCalcIVA()"></div>
+      <div class="form-row"><div class="form-lbl">IVA</div><input class="form-inp" type="number" step="0.01" id="mn-iva" placeholder="0.00"></div>
+      <div class="form-row"><div class="form-lbl">Total *</div><input class="form-inp" type="number" step="0.01" id="mn-total" placeholder="0.00"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sec" onclick="closeModal('manualModal')">Cancelar</button>
+      <button class="btn-pri" onclick="saveManual()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="snapCanvas" style="display:none"></canvas>
+<input type="file" id="camFallbackInput" accept="image/*" capture="environment" style="display:none" onchange="handleCamFallback(this.files)">
+
+<!-- VOICE MODAL -->
+<div class="modal-bg" id="voiceModal">
+  <div class="modal voice-modal">
+    <div class="voice-header">
+      <span>🎙️ Dictar datos de factura</span>
+      <button class="btn-icon" onclick="closeVoice()">✕</button>
+    </div>
+    <div class="voice-body">
+      <div class="voice-mic-wrap">
+        <div class="voice-mic-pulse" id="voicePulse"></div>
+        <div class="voice-mic-pulse on2" id="voicePulse2"></div>
+        <button class="voice-mic-btn" id="voiceMicBtn" onclick="toggleVoiceMic()">🎙️</button>
+      </div>
+      <div class="voice-status" id="voiceStatus">Toca el micrófono y empieza a hablar</div>
+      <div class="voice-transcript" id="voiceTranscript"></div>
+      <div class="voice-hint">Ej: "Factura de TechCorp Ecuador por 120 dólares, categoría tecnología, de hoy"</div>
+      <div class="voice-not-supported" id="voiceNotSupported" style="display:none">⚠️ Tu navegador no soporta dictado por voz. Usa Chrome, Edge o Safari actualizado.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sec" onclick="closeVoice()">Cancelar</button>
+      <button class="btn-pri" id="voiceProcessBtn" onclick="processVoiceText()" disabled>🤖 Procesar con IA</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toastEl"></div>
+
+<script>
+/* ═══════════ DATA ═══════════ */
+let DB = [];
+let charts = {};
+let editIdx = null;
+let chatHistory = [];
+let camStream = null;
+let multiCam = false;
+let capturedThumbURL = null;
+
+/* ═══════════ DEVICE DETECTION ═══════════ */
+function isMobileDevice(){
+  const ua = navigator.userAgent || '';
+  const uaMobile = /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile/i.test(ua);
+  const coarsePointer = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
+  const narrow = window.innerWidth <= 820;
+  return uaMobile || (coarsePointer && narrow);
+}
+let facingMode = isMobileDevice() ? 'environment' : 'user';
+
+document.addEventListener('DOMContentLoaded', () => {
+  const sub = document.getElementById('camCardSub');
+  if (sub) sub.textContent = isMobileDevice() ? 'Cámara trasera automática' : 'Webcam de tu computador';
+  updateDropzoneText();
+});
+
+function updateDropzoneText(){
+  const t=document.getElementById('dzTitle'), s=document.getElementById('dzSub');
+  if(!t||!s)return;
+  if(isMobileDevice()){
+    t.textContent='Toca para elegir tu factura';
+    s.textContent='Desde galería, archivos o cámara — la IA extrae los datos automáticamente';
+  }else{
+    t.textContent='Arrastra tu factura o recibo aquí';
+    s.textContent='Haz clic para elegir, o pega una imagen con Ctrl+V — la IA la procesa al instante';
+  }
+}
+
+/* Pegar imagen desde el portapapeles (Ctrl+V) mientras se está en la pestaña Subir */
+document.addEventListener('paste', (e) => {
+  if(!document.getElementById('p-upload')?.classList.contains('on'))return;
+  const items=e.clipboardData?.items;
+  if(!items)return;
+  for(const item of items){
+    if(item.type && item.type.startsWith('image/')){
+      const file=item.getAsFile();
+      if(file){toast('📋 Imagen pegada desde el portapapeles');handleFiles([file]);}
+      break;
+    }
+  }
+});
+
+/* ═══════════ UTILS ═══════════ */
+const fmtN = (n, d=2) => (+n||0).toFixed(d).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const fmtD = s => s ? new Date(s+'T12:00:00').toLocaleDateString('es-EC',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+const delay = ms => new Promise(r=>setTimeout(r,ms));
+
+/* ═══════════ THEME ═══════════ */
+document.getElementById('themeBtn').addEventListener('click',()=>{
+  document.documentElement.toggleAttribute('data-dark');
+  document.getElementById('themeBtn').textContent = document.documentElement.hasAttribute('data-dark')?'☀️':'🌙';
+  setTimeout(redrawAllCharts,80);
+});
+
+/* ═══════════ TABS ═══════════ */
+const TABS = ['dash','upload','facturas','reportes','asistente'];
+function goTab(id, el) {
+  TABS.forEach(t=>document.getElementById('p-'+t).classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('p-'+id).classList.add('on');
+  if(el) el.classList.add('on');
+  else document.querySelectorAll('.tab')[TABS.indexOf(id)]?.classList.add('on');
+  if(id==='facturas') renderTable();
+  if(id==='reportes'){renderReportStats();renderLineChart();renderTopProv();}
+  if(id==='dash'){updateDashMetrics();setTimeout(renderDashCharts,80);}
+}
+
+/* ═══════════ CAMERA (auto-adapta a móvil / escritorio) ═══════════ */
+function updateCamFrameAspect(){
+  const frame = document.getElementById('camFrame');
+  if(!frame) return;
+  const portrait = window.innerHeight > window.innerWidth;
+  frame.style.aspectRatio = portrait ? '1.25/1' : '1.55/1';
+}
+
+async function openCamModal(){
+  document.getElementById('camDevTag').textContent = isMobileDevice() ? '📱 Móvil' : '💻 Escritorio';
+
+  if(!navigator.mediaDevices?.getUserMedia){
+    if(isMobileDevice()){
+      toast('📷 Abriendo cámara nativa del dispositivo…');
+      document.getElementById('camFallbackInput').click();
+      return;
+    }
+    toast('❌ Tu navegador no soporta acceso a cámara. Usa Chrome o Safari actualizado.');
+    return;
+  }
+
+  document.getElementById('camModal').classList.add('on');
+  document.getElementById('camVideo').style.display='none';
+  document.getElementById('camGuide').style.display='none';
+  document.getElementById('camPlaceholder').style.display='flex';
+  document.getElementById('camPlaceholderTxt').textContent='Solicitando permiso…';
+  document.getElementById('captureBtn').disabled=true;
+  updateCamFrameAspect();
+  await startCam(facingMode);
+}
+
+async function startCam(mode){
+  if(camStream) camStream.getTracks().forEach(t=>t.stop());
+  document.getElementById('camStatus').textContent='⏳ Conectando cámara…';
+  const vid = document.getElementById('camVideo');
+  const idealW = isMobileDevice() ? 1920 : 1280;
+  const idealH = isMobileDevice() ? 1080 : 720;
+
+  const tryStream = async (constraints) => navigator.mediaDevices.getUserMedia(constraints);
+
+  try {
+    try {
+      camStream = await tryStream({video:{facingMode:{ideal:mode},width:{ideal:idealW},height:{ideal:idealH}},audio:false});
+    } catch {
+      try {
+        camStream = await tryStream({video:{facingMode:mode},audio:false});
+      } catch {
+        camStream = await tryStream({video:true,audio:false});
+      }
+    }
+
+    vid.srcObject = camStream;
+    vid.onloadedmetadata = async () => {
+      await vid.play();
+      document.getElementById('camPlaceholder').style.display='none';
+      vid.style.display='block';
+      document.getElementById('camGuide').style.display='flex';
+      document.getElementById('captureBtn').disabled=false;
+      const devTxt = isMobileDevice() ? '📱 Cámara del dispositivo activa' : '💻 Webcam activa';
+      document.getElementById('camStatus').textContent='🟢 '+devTxt+' — listo para capturar';
+      updateCamFrameAspect();
+
+      try {
+        const devs = await navigator.mediaDevices.enumerateDevices();
+        multiCam = devs.filter(d=>d.kind==='videoinput').length>1;
+        const sw = document.getElementById('camSwitch');
+        const sp = document.getElementById('camSpacer');
+        if(multiCam){sw.style.display='flex';sp.style.display='none';}
+        else{sw.style.display='none';sp.style.display='block';}
+      } catch{}
+    };
+  } catch(e){
+    document.getElementById('camPlaceholderTxt').textContent='❌ Acceso denegado';
+    document.getElementById('camStatus').textContent='❌ Permiso de cámara denegado';
+    if(isMobileDevice()){
+      closeCam();
+      toast('📷 Abriendo cámara nativa como alternativa…');
+      setTimeout(()=>document.getElementById('camFallbackInput').click(),250);
+    } else {
+      toast('❌ Acceso a cámara denegado. Haz clic en el icono 🔒 de la barra de dirección para habilitar permisos.');
+    }
+  }
+}
+
+async function switchCamera(){
+  facingMode = facingMode==='environment'?'user':'environment';
+  document.getElementById('camStatus').textContent='🔄 Cambiando cámara…';
+  document.getElementById('captureBtn').disabled=true;
+  await startCam(facingMode);
+}
+
+function closeCam(){
+  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
+  const vid=document.getElementById('camVideo');
+  vid.srcObject=null;vid.style.display='none';
+  document.getElementById('camModal').classList.remove('on');
+}
+
+async function snapPhoto(){
+  const vid=document.getElementById('camVideo');
+  if(!vid.videoWidth){toast('⚠️ Espera que la cámara cargue');return;}
+  const fl=document.getElementById('camFlash');
+  fl.classList.add('on');setTimeout(()=>fl.classList.remove('on'),350);
+  const canvas=document.getElementById('snapCanvas');
+  canvas.width=vid.videoWidth;canvas.height=vid.videoHeight;
+  canvas.getContext('2d').drawImage(vid,0,0);
+  const dataURL=canvas.toDataURL('image/jpeg',0.92);
+  capturedThumbURL=dataURL;
+  closeCam();
+  await delay(300);
+  goTab('upload');
+  const b64=dataURL.split(',')[1];
+  await runPipeline(b64,'image/jpeg',false,'📷 Foto capturada');
+}
+
+/* Fallback nativo: dispara la app de cámara del sistema cuando getUserMedia no está disponible o fue denegado */
+async function handleCamFallback(files){
+  if(!files||!files[0])return;
+  const file=files[0];
+  if(file.size>10*1024*1024){toast('⚠️ Imagen demasiado grande. Máximo 10MB.');return;}
+  capturedThumbURL=URL.createObjectURL(file);
+  goTab('upload');
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const b64=e.target.result.split(',')[1];
+    await runPipeline(b64,file.type||'image/jpeg',false,'📷 Foto de cámara');
+  };
+  reader.readAsDataURL(file);
+}
+
+window.addEventListener('resize',()=>{
+  if(document.getElementById('camModal').classList.contains('on')) updateCamFrameAspect();
+});
+window.addEventListener('orientationchange',()=>{
+  setTimeout(()=>{ if(document.getElementById('camModal').classList.contains('on')) updateCamFrameAspect(); },250);
+});
+
+/* ═══════════ VOZ — dictado de facturas ═══════════ */
+let recognition=null, voiceFinalText='', voiceListening=false;
+
+function supportsSpeech(){ return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
+
+function openVoiceModal(){
+  voiceFinalText='';
+  document.getElementById('voiceTranscript').innerHTML='';
+  document.getElementById('voiceProcessBtn').disabled=true;
+  document.getElementById('voiceMicBtn').classList.remove('listening');
+  document.getElementById('voicePulse').classList.remove('on');
+  document.getElementById('voicePulse2').classList.remove('on');
+  document.getElementById('voiceNotSupported').style.display = supportsSpeech() ? 'none' : 'block';
+  document.getElementById('voiceMicBtn').disabled = !supportsSpeech();
+  document.getElementById('voiceStatus').textContent = supportsSpeech() ? 'Toca el micrófono y empieza a hablar' : 'Dictado no disponible en este navegador';
+  document.getElementById('voiceModal').classList.add('on');
+}
+
+function toggleVoiceMic(){
+  if(!supportsSpeech()){toast('❌ Tu navegador no soporta dictado por voz.');return;}
+  if(voiceListening) stopVoiceListening();
+  else startVoiceListening();
+}
+
+function startVoiceListening(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang='es-EC';
+  recognition.continuous=true;
+  recognition.interimResults=true;
+
+  recognition.onresult=(e)=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const t=e.results[i][0].transcript;
+      if(e.results[i].isFinal) voiceFinalText+=t+' ';
+      else interim+=t;
+    }
+    document.getElementById('voiceTranscript').innerHTML=escH(voiceFinalText)+'<span style="opacity:.5">'+escH(interim)+'</span>';
+    document.getElementById('voiceProcessBtn').disabled=!voiceFinalText.trim();
+  };
+  recognition.onerror=(e)=>{
+    document.getElementById('voiceStatus').textContent='⚠️ Error de micrófono: '+(e.error||'desconocido');
+    stopVoiceListening();
+  };
+  recognition.onend=()=>{
+    voiceListening=false;
+    document.getElementById('voiceMicBtn').classList.remove('listening');
+    document.getElementById('voicePulse').classList.remove('on');
+    document.getElementById('voicePulse2').classList.remove('on');
+    document.getElementById('voiceStatus').textContent = voiceFinalText.trim() ? '✅ Listo — revisa el texto y procesa' : 'Toca el micrófono para hablar';
+  };
+  try{
+    recognition.start();
+    voiceListening=true;
+    document.getElementById('voiceMicBtn').classList.add('listening');
+    document.getElementById('voicePulse').classList.add('on');
+    document.getElementById('voicePulse2').classList.add('on');
+    document.getElementById('voiceStatus').textContent='🔴 Escuchando… habla con claridad';
+  }catch(e){
+    toast('❌ No se pudo iniciar el micrófono');
+  }
+}
+
+function stopVoiceListening(){
+  if(recognition){try{recognition.stop();}catch{}}
+  voiceListening=false;
+}
+
+function closeVoice(){
+  if(recognition){try{recognition.stop();}catch{} recognition=null;}
+  voiceListening=false;
+  document.getElementById('voiceModal').classList.remove('on');
+}
+
+async function processVoiceText(){
+  const text=voiceFinalText.trim();
+  if(!text){toast('⚠️ No se detectó ningún texto');return;}
+  closeVoice();
+  goTab('upload');
+  capturedThumbURL=null;
+  document.getElementById('progWrap').classList.add('on');
+  document.getElementById('extPreview').classList.remove('on');
+  for(let i=0;i<5;i++)document.getElementById('ps'+i).className='ps';
+  document.getElementById('progBar').style.width='0%';
+
+  setStep(0); await delay(150);
+  setStep(1);
+
+  let extracted=null;
+  try{
+    const prompt=`El usuario dictó por voz la siguiente descripción de una factura o gasto: "${text}". Extrae los datos y responde ÚNICAMENTE con JSON puro (sin markdown, sin backticks):
+{"proveedor":"nombre empresa o persona (null si no se menciona)","ruc":"RUC o identificación si se menciona, sino null","numero_factura":"número de comprobante si se menciona, sino null","fecha":"YYYY-MM-DD (usa ${new Date().toISOString().split('T')[0]} si no se menciona fecha o se dice 'hoy')","categoria":"elige: Tecnología, Servicios, Papelería, Alimentación, Combustible, Salud, Construcción, Transporte, Otros","subtotal":0.00,"iva":0.00,"total":0.00,"observaciones":"resumen breve de lo dictado"}
+Si solo se menciona el total, calcula subtotal e iva asumiendo 15% de IVA incluido en el total. Usa solo números decimales para montos.`;
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,messages:[{role:'user',content:prompt}]})});
+    const data=await resp.json();
+    const raw=data.content?.[0]?.text||'';
+    extracted=JSON.parse(raw.replace(/```json|```/g,'').trim());
+  }catch(e){console.warn('voice extraction error',e);}
+
+  setStep(2); await delay(150);
+  setStep(3); await delay(150);
+  setStep(4,true);
+
+  showExtractForm(extracted, '🎙️ Dictado: "'+(text.length>60?text.slice(0,60)+'…':text)+'"');
+}
+
+/* ═══════════ FILE UPLOAD ═══════════ */
+async function handleFiles(files){
+  if(!files||!files[0])return;
+  const file=files[0];
+  if(file.size>10*1024*1024){toast('⚠️ Archivo demasiado grande. Máximo 10MB.');return;}
+  const isPDF=file.type==='application/pdf';
+  const isImg=file.type.startsWith('image/');
+  if(!isPDF&&!isImg){toast('❌ Formato no soportado. Usa PDF, JPG, PNG o WEBP.');return;}
+  capturedThumbURL=isImg?URL.createObjectURL(file):null;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const b64=e.target.result.split(',')[1];
+    await runPipeline(b64,file.type,isPDF,file.name);
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ═══════════ PIPELINE (real AI) ═══════════ */
+const PIPE_MSGS=['📷 Leyendo imagen…','🤖 Conectando con Claude AI…','📊 Extrayendo datos de la factura…','✅ Validando información…','📋 Preparando formulario…'];
+const EXTRACT_PROMPT=`Analiza esta imagen de factura, recibo o comprobante de pago y extrae los datos. Responde ÚNICAMENTE con JSON puro (sin markdown, sin backticks, sin texto adicional):
+{"proveedor":"nombre empresa emisora","ruc":"RUC o identificación fiscal (null si no aparece)","numero_factura":"número comprobante (null si no aparece)","fecha":"YYYY-MM-DD (null si no legible)","categoria":"elige: Tecnología, Servicios, Papelería, Alimentación, Combustible, Salud, Construcción, Transporte, Otros","subtotal":0.00,"iva":0.00,"total":0.00,"observaciones":"notas relevantes"}
+Si un campo no es legible usa null. Para moneda usa solo el número decimal.`;
+
+function setStep(i,done=false){
+  if(i>0)document.getElementById('ps'+(i-1)).className='ps done';
+  document.getElementById('ps'+i).className=done?'ps done':'ps active';
+  document.getElementById('progBar').style.width=((i+1)/5*100)+'%';
+  document.getElementById('progMsg').textContent=PIPE_MSGS[i];
+}
+
+async function runPipeline(b64,mediaType,isPDF,fname){
+  document.getElementById('progWrap').classList.add('on');
+  document.getElementById('extPreview').classList.remove('on');
+  for(let i=0;i<5;i++)document.getElementById('ps'+i).className='ps';
+  document.getElementById('progBar').style.width='0%';
+
+  setStep(0); await delay(200);
+  setStep(1);
+
+  let extracted=null;
+  try{
+    const content=isPDF
+      ?[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:EXTRACT_PROMPT}]
+      :[{type:'image',source:{type:'base64',media_type:mediaType,data:b64}},{type:'text',text:EXTRACT_PROMPT}];
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content}]})
+    });
+    const data=await resp.json();
+    const raw=data.content?.[0]?.text||'';
+    extracted=JSON.parse(raw.replace(/```json|```/g,'').trim());
+  }catch(e){console.warn('AI extraction:',e);}
+
+  setStep(2); await delay(200);
+  setStep(3); await delay(150);
+  setStep(4,true);
+
+  showExtractForm(extracted,fname);
+}
+
+function showExtractForm(d,fname){
+  const v=d||{};
+  document.getElementById('ef-prov').value=v.proveedor||'';
+  document.getElementById('ef-ruc').value=v.ruc||'';
+  document.getElementById('ef-num').value=v.numero_factura||'';
+  document.getElementById('ef-fecha').value=v.fecha||new Date().toISOString().split('T')[0];
+  document.getElementById('ef-cat').value=v.categoria||'Otros';
+  document.getElementById('ef-sub').value=v.subtotal||'';
+  document.getElementById('ef-iva').value=v.iva||'';
+  document.getElementById('ef-total').value=v.total||'';
+  document.getElementById('ef-obs').value=v.observaciones||'';
+  const th=document.getElementById('capThumb');
+  const src=document.getElementById('extSource');
+  if(capturedThumbURL){
+    document.getElementById('capThumbImg').src=capturedThumbURL;
+    document.getElementById('capThumbName').textContent=fname||'imagen capturada';
+    th.style.display='flex';
+    src.style.display='none';
+  }else{
+    th.style.display='none';
+    if(fname){src.style.display='block';src.textContent=fname;}
+    else src.style.display='none';
+  }
+  const ttl=document.getElementById('extTitle');
+  if(d){ttl.className='ext-title ok';ttl.textContent='🤖 IA extrajo estos datos — revisa y edita si es necesario';}
+  else{ttl.className='ext-title warn';ttl.textContent='⚠️ No se pudo leer automáticamente — ingresa los datos manualmente';}
+  document.getElementById('extPreview').classList.add('on');
+}
+
+function autoCalcIVA(){
+  const s=parseFloat(document.getElementById('ef-sub').value)||0;
+  if(s>0){
+    document.getElementById('ef-iva').value=(s*0.15).toFixed(2);
+    document.getElementById('ef-total').value=(s*1.15).toFixed(2);
+  }
+}
+function autoCalcFromTotal(){
+  const t=parseFloat(document.getElementById('ef-total').value)||0;
+  if(t>0&&!document.getElementById('ef-sub').value){
+    const s=(t/1.15);
+    document.getElementById('ef-sub').value=s.toFixed(2);
+    document.getElementById('ef-iva').value=(t-s).toFixed(2);
+  }
+}
+
+function discardExtract(){
+  document.getElementById('extPreview').classList.remove('on');
+  document.getElementById('progWrap').classList.remove('on');
+  capturedThumbURL=null;
+}
+
+function saveInvoice(){
+  const prov=document.getElementById('ef-prov').value.trim();
+  const total=parseFloat(document.getElementById('ef-total').value);
+  if(!prov){toast('⚠️ El nombre del proveedor es obligatorio');return;}
+  if(!total||total<=0){toast('⚠️ Ingresa un monto total válido');return;}
+  const sub=parseFloat(document.getElementById('ef-sub').value)||+(total/1.15).toFixed(2);
+  const iva=parseFloat(document.getElementById('ef-iva').value)||+(total-sub).toFixed(2);
+  DB.unshift({id:'#'+String(DB.length+1).padStart(3,'0'),
+    prov,ruc:document.getElementById('ef-ruc').value||'—',
+    num:document.getElementById('ef-num').value||'—',
+    fecha:document.getElementById('ef-fecha').value||new Date().toISOString().split('T')[0],
+    cat:document.getElementById('ef-cat').value||'Otros',
+    sub,iva,total,estado:'Procesada',
+    obs:document.getElementById('ef-obs').value||'IA OCR'});
+  discardExtract();
+  updateDashMetrics();
+  toast('✅ Factura guardada — datos reales registrados');
+  setTimeout(()=>goTab('facturas'),900);
+}
+
+/* ═══════════ MANUAL ENTRY ═══════════ */
+function openManualModal(){
+  document.getElementById('mn-fecha').value=new Date().toISOString().split('T')[0];
+  document.getElementById('manualModal').classList.add('on');
+}
+function mnCalcIVA(){
+  const s=parseFloat(document.getElementById('mn-sub').value)||0;
+  if(s>0){document.getElementById('mn-iva').value=(s*0.15).toFixed(2);document.getElementById('mn-total').value=(s*1.15).toFixed(2);}
+}
+function saveManual(){
+  const prov=document.getElementById('mn-prov').value.trim();
+  const total=parseFloat(document.getElementById('mn-total').value);
+  if(!prov||!total){toast('⚠️ Proveedor y total son obligatorios');return;}
+  const sub=parseFloat(document.getElementById('mn-sub').value)||+(total/1.15).toFixed(2);
+  const iva=parseFloat(document.getElementById('mn-iva').value)||+(total-sub).toFixed(2);
+  DB.unshift({id:'#'+String(DB.length+1).padStart(3,'0'),
+    prov,ruc:document.getElementById('mn-ruc').value||'—',
+    num:document.getElementById('mn-num').value||'—',
+    fecha:document.getElementById('mn-fecha').value,
+    cat:document.getElementById('mn-cat').value,
+    sub,iva,total,estado:'Manual',obs:'Ingresado manualmente'});
+  closeModal('manualModal');
+  updateDashMetrics();
+  toast('✅ Factura registrada manualmente');
+  goTab('facturas');
+}
+
+/* ═══════════ DASHBOARD ═══════════ */
+function updateDashMetrics(){
+  const tot=DB.reduce((s,r)=>s+r.total,0);
+  const iva=DB.reduce((s,r)=>s+r.iva,0);
+  const avg=DB.length?tot/DB.length:0;
+  document.getElementById('m-docs').textContent=DB.length;
+  document.getElementById('m-total').textContent='$'+fmtN(tot);
+  document.getElementById('m-iva').textContent='$'+fmtN(iva);
+  document.getElementById('m-avg').textContent='$'+fmtN(avg);
+}
+
+/* ═══════════ CHARTS ═══════════ */
+const isDark=()=>document.documentElement.hasAttribute('data-dark');
+const gColor=()=>isDark()?'rgba(255,255,255,0.06)':'rgba(27,41,82,0.05)';
+const tColor=()=>isDark()?'#7a8cc4':'#6b7ab5';
+const CAT_COLORS=['#1b2952','#c176fc','#b4cfff','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#84cc16'];
+
+function getMonthlyData(){
+  const now=new Date();
+  const months={};
+  for(let i=5;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    months[k]=0;
+  }
+  DB.forEach(r=>{const k=r.fecha.slice(0,7);if(k in months)months[k]+=r.total;});
+  const lbls=Object.keys(months).map(k=>{const[y,m]=k.split('-');return new Date(+y,+m-1).toLocaleString('es',{month:'short'});});
+  return{labels:lbls,data:Object.values(months)};
+}
+function getCatData(){
+  const cats={};
+  DB.forEach(r=>{cats[r.cat]=(cats[r.cat]||0)+r.total;});
+  const s=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  return{labels:s.map(([k])=>k),data:s.map(([,v])=>v)};
+}
+
+function renderDashCharts(){
+  const md=getMonthlyData();
+  const cd=getCatData();
+  if(charts.bar)charts.bar.destroy();
+  const bCtx=document.getElementById('barChart');
+  if(bCtx){
+    charts.bar=new Chart(bCtx,{type:'bar',
+      data:{labels:md.labels,datasets:[{label:'Gastos ($)',data:md.data,backgroundColor:isDark()?'#c176fc':'#1b2952',borderRadius:7,borderSkipped:false}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{ticks:{color:tColor(),font:{size:11}},grid:{display:false}},y:{ticks:{color:tColor(),font:{size:11},callback:v=>'$'+v},grid:{color:gColor()}}}}});
+  }
+  if(charts.pie)charts.pie.destroy();
+  const pCtx=document.getElementById('pieChart');
+  if(pCtx){
+    if(cd.data.length){
+      const lg=document.getElementById('catLegend');
+      const tot=cd.data.reduce((a,b)=>a+b,0);
+      lg.innerHTML=cd.labels.map((l,i)=>`<div class="cat-dot"><span style="background:${CAT_COLORS[i%CAT_COLORS.length]}"></span>${l} ${tot?Math.round(cd.data[i]/tot*100):0}%</div>`).join('');
+      charts.pie=new Chart(pCtx,{type:'doughnut',
+        data:{labels:cd.labels,datasets:[{data:cd.data,backgroundColor:CAT_COLORS.slice(0,cd.labels.length),borderWidth:0}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false}}}});
+    }else{
+      document.getElementById('catLegend').innerHTML='';
+      document.getElementById('pieWrap').innerHTML='<div class="chart-empty"><div style="font-size:32px">📊</div><div>Sin datos todavía</div></div>';
+    }
+  }
+}
+
+function renderLineChart(){
+  const md=getMonthlyData();
+  if(charts.line)charts.line.destroy();
+  const lCtx=document.getElementById('lineChart');
+  if(lCtx){
+    charts.line=new Chart(lCtx,{type:'line',
+      data:{labels:md.labels,datasets:[{label:'Gastos',data:md.data,borderColor:'#c176fc',backgroundColor:'rgba(193,118,252,0.06)',fill:true,tension:0.4,pointBackgroundColor:'#c176fc',pointRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{ticks:{color:tColor(),font:{size:11}},grid:{display:false}},y:{ticks:{color:tColor(),font:{size:11},callback:v=>'$'+v},grid:{color:gColor()}}}}});
+  }
+}
+
+function redrawAllCharts(){
+  ['bar','pie','line'].forEach(k=>{if(charts[k]){charts[k].destroy();delete charts[k];}});
+  if(document.getElementById('p-dash').classList.contains('on'))renderDashCharts();
+  if(document.getElementById('p-reportes').classList.contains('on')){renderLineChart();renderTopProv();}
+}
+
+/* ═══════════ TABLE ═══════════ */
+const BADGE_MAP={Tecnología:'b-b',Servicios:'b-p',Papelería:'b-o',Alimentación:'b-g',Combustible:'b-o',Salud:'b-b',Construcción:'b-o',Transporte:'b-b',Otros:'',Procesada:'b-g',Manual:'b-p',Revisión:'b-o'};
+
+function renderTable(){
+  const q=(document.getElementById('searchIn').value||'').toLowerCase();
+  const cat=document.getElementById('catF').value;
+  const rows=DB.filter(r=>{
+    if(q&&!`${r.prov}${r.ruc||''}${r.id}${r.cat}${r.num||''}`.toLowerCase().includes(q))return false;
+    if(cat&&r.cat!==cat)return false;
+    return true;
+  });
+  if(!rows.length){
+    document.getElementById('tBody').innerHTML=`<tr><td colspan="10"><div class="empty-state">
+      <div class="es-icon">${DB.length?'🔍':'📭'}</div>
+      <div class="es-title">${DB.length?'Sin resultados':'No hay facturas registradas'}</div>
+      <div class="es-sub">${DB.length?'Intenta con otros filtros':'Sube tu primera factura para comenzar'}</div>
+    </div></td></tr>`;
+    return;
+  }
+  document.getElementById('tBody').innerHTML=rows.map(r=>`<tr>
+    <td style="font-weight:500;color:var(--accent)">${r.id}</td>
+    <td style="font-weight:500">${r.prov}</td>
+    <td style="color:var(--muted);font-size:11px">${r.ruc}</td>
+    <td style="white-space:nowrap">${r.fecha}</td>
+    <td><span class="badge ${BADGE_MAP[r.cat]||'b-b'}">${r.cat}</span></td>
+    <td>$${fmtN(r.sub)}</td><td>$${fmtN(r.iva)}</td>
+    <td style="font-weight:600">$${fmtN(r.total)}</td>
+    <td><span class="badge ${BADGE_MAP[r.estado]||'b-g'}">${r.estado}</span></td>
+    <td style="white-space:nowrap">
+      <button class="act-btn" onclick="openEdit(${DB.indexOf(r)})" title="Editar">✏️</button>
+      <button class="act-btn" onclick="delRow(${DB.indexOf(r)})" title="Eliminar">🗑️</button>
+    </td></tr>`).join('');
+}
+
+function delRow(i){DB.splice(i,1);renderTable();updateDashMetrics();toast('🗑️ Factura eliminada');}
+
+function openEdit(i){
+  editIdx=i;const r=DB[i];
+  document.getElementById('eProveedor').value=r.prov;
+  document.getElementById('eRuc').value=r.ruc;
+  document.getElementById('eNum').value=r.num||'';
+  document.getElementById('eFecha').value=r.fecha;
+  document.getElementById('eCat').value=r.cat;
+  document.getElementById('eSub').value=r.sub;
+  document.getElementById('eIva').value=r.iva;
+  document.getElementById('eTotal').value=r.total;
+  document.getElementById('eObs').value=r.obs||'';
+  document.getElementById('editModal').classList.add('on');
+}
+function saveEdit(){
+  const r=DB[editIdx];
+  r.prov=document.getElementById('eProveedor').value;
+  r.ruc=document.getElementById('eRuc').value;
+  r.num=document.getElementById('eNum').value;
+  r.fecha=document.getElementById('eFecha').value;
+  r.cat=document.getElementById('eCat').value;
+  r.sub=+document.getElementById('eSub').value;
+  r.iva=+document.getElementById('eIva').value;
+  r.total=+document.getElementById('eTotal').value;
+  r.obs=document.getElementById('eObs').value;
+  closeModal('editModal');renderTable();updateDashMetrics();
+  toast('✅ Factura actualizada');
+}
+
+/* ═══════════ REPORTS ═══════════ */
+function renderReportStats(){
+  const now=new Date();
+  const tot=DB.reduce((s,r)=>s+r.total,0);
+  const iva=DB.reduce((s,r)=>s+r.iva,0);
+  const avg=DB.length?tot/DB.length:0;
+  document.getElementById('sr-docs').textContent=DB.length;
+  document.getElementById('sr-total').textContent='$'+fmtN(tot,0);
+  document.getElementById('sr-iva').textContent='$'+fmtN(iva,0);
+  document.getElementById('sr-avg').textContent='$'+fmtN(avg,0);
+  const today=now.toISOString().split('T')[0];
+  const wk=new Date(now);wk.setDate(now.getDate()-7);
+  document.getElementById('rr-today').textContent=DB.filter(r=>r.fecha===today).length+' facturas';
+  document.getElementById('rr-week').textContent=DB.filter(r=>new Date(r.fecha)>=wk).length+' facturas';
+  document.getElementById('rr-month').textContent=DB.filter(r=>{const d=new Date(r.fecha);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).length+' facturas';
+}
+function renderTopProv(){
+  const map={};DB.forEach(r=>{map[r.prov]=(map[r.prov]||0)+r.total;});
+  const sorted=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  if(!sorted.length){document.getElementById('topProv').innerHTML='<div class="empty-state"><div class="es-icon">🏢</div><div class="es-sub">Sin facturas todavía</div></div>';return;}
+  const max=sorted[0][1];
+  document.getElementById('topProv').innerHTML=sorted.map(([n,v])=>`
+    <div class="prov-row">
+      <div class="prov-avatar">🏢</div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:500;margin-bottom:4px">${n}</div>
+        <div class="prov-bar-bg"><div class="prov-bar" style="width:${(v/max*100).toFixed(0)}%"></div></div>
+      </div>
+      <div class="prov-amt">$${fmtN(v)}</div>
+    </div>`).join('');
+}
+
+/* ═══════════ EXPORTS ═══════════ */
+function exportCSV(){
+  if(!DB.length){toast('⚠️ No hay facturas para exportar');return;}
+  const hdr=['N°','Proveedor','RUC','N° Comprobante','Fecha','Categoría','Subtotal','IVA','Total','Estado'];
+  const rows=DB.map(r=>[r.id,`"${r.prov}"`,r.ruc,r.num,r.fecha,r.cat,r.sub,r.iva,r.total,r.estado]);
+  const csv=[hdr,...rows].map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='facturas_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();toast('📊 CSV exportado correctamente');
+}
+function exportJSON(){
+  if(!DB.length){toast('⚠️ No hay facturas para exportar');return;}
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(DB,null,2)],{type:'application/json'}));
+  a.download='facturas_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();toast('📋 JSON exportado correctamente');
+}
+
+/* ═══════════ AI CHAT (real API) ═══════════ */
+function addMsg(role,html){
+  const box=document.getElementById('chatBox');
+  const d=document.createElement('div');d.className='msg '+role;
+  d.innerHTML=`<div class="msg-av ${role}">${role==='usr'?'👤':'🤖'}</div><div class="msg-bbl">${html}</div>`;
+  box.appendChild(d);box.scrollTop=box.scrollHeight;
+}
+function addTyping(){
+  const box=document.getElementById('chatBox');
+  const d=document.createElement('div');d.className='msg ai';d.id='typing_'+Date.now();
+  d.innerHTML='<div class="msg-av ai">🤖</div><div class="msg-bbl"><div class="typing-dots"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>';
+  box.appendChild(d);box.scrollTop=box.scrollHeight;return d;
+}
+
+async function sendChat(){
+  const inp=document.getElementById('chatIn');
+  const msg=inp.value.trim();if(!msg)return;
+  addMsg('usr',escH(msg));inp.value='';
+  document.getElementById('chatSendBtn').disabled=true;
+  const t=addTyping();
+  const dbCtx=DB.length?`Tienes ${DB.length} facturas. Resumen: total=$${fmtN(DB.reduce((s,r)=>s+r.total,0))}, IVA=$${fmtN(DB.reduce((s,r)=>s+r.iva,0))}. Datos: ${JSON.stringify(DB.slice(0,30))}`:
+    'No hay facturas registradas todavía. El usuario aún no ha subido ninguna factura.';
+  chatHistory.push({role:'user',content:msg});
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,
+        system:`Eres un asistente experto en control de compras, gastos y facturación para empresas ecuatorianas (IVA 15%). Respondes en español, de forma concisa y útil con emojis. Contexto actual: ${dbCtx}`,
+        messages:chatHistory.slice(-12)})});
+    const data=await resp.json();
+    const reply=data.content?.[0]?.text||'No pude procesar tu consulta.';
+    chatHistory.push({role:'assistant',content:reply});
+    t.remove();addMsg('ai',reply.replace(/\n/g,'<br>'));
+  }catch(e){
+    t.remove();
+    chatHistory.pop();
+    addMsg('ai','❌ Error de conexión. Verifica tu conexión e intenta nuevamente.');
+  }
+  document.getElementById('chatSendBtn').disabled=false;
+}
+function askAI(q){document.getElementById('chatIn').value=q;sendChat();}
+function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+/* ═══════════ MODALS ═══════════ */
+function closeModal(id){document.getElementById(id).classList.remove('on');}
+document.querySelectorAll('.modal-bg').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id);});
+});
+
+/* ═══════════ TOAST ═══════════ */
+let toastT;
+function toast(msg){
+  clearTimeout(toastT);
+  const el=document.getElementById('toastEl');
+  el.textContent=msg;el.classList.add('on');
+  toastT=setTimeout(()=>el.classList.remove('on'),3500);
+}
+
+/* ═══════════ INIT ═══════════ */
+window.addEventListener('load',()=>{
+  updateDashMetrics();
+  renderTable();
+  setTimeout(renderDashCharts,200);
+  addMsg('ai','👋 ¡Hola! Soy tu asistente IA. Cuando subas facturas podré analizar tus gastos, calcular IVA, identificar proveedores frecuentes y mucho más. ¿En qué te ayudo?');
+});
+</script>
+</body>
+</html>
